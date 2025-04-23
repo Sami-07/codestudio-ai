@@ -3,31 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useSetAtom, useAtom } from 'jotai';
-import { fileStructureAtom, selectedFileAtom, generationStatusAtom, generationErrorAtom, FileSystemNode } from '@/store/atoms';
+import { fileStructureAtom, selectedFileAtom, generationStatusAtom, generationErrorAtom } from '@/store/atoms';
+import { FileSystemNode, Step, Message, ComponentDesign } from '@/types';
 import FileExplorer from '@/components/FileExplorer';
 import CodeEditor from '@/components/CodeEditor';
+import DesignSelector from '@/components/DesignSelector';
 import { Loader2 } from 'lucide-react';
-
-interface Step {
-  type: 'CreateFile' | 'UpdateFile' | 'Shell';
-  path?: string;
-  code?: string;
-  command?: string;
-  status: 'pending' | 'completed';
-}
-
-// Helper function to find a file in the file structure
-function findFile(node: FileSystemNode | null, path: string): FileSystemNode | null {
-  if (!node) return null;
-  if (node.path === path) return node;
-  if (node.type === 'folder' && node.children) {
-    for (const child of node.children) {
-      const found = findFile(child, path);
-      if (found) return found;
-    }
-  }
-  return null;
-}
 
 // Helper function to parse XML into steps
 function parseXml(xml: string): Step[] {
@@ -62,6 +43,17 @@ function parseXml(xml: string): Step[] {
         command: content.trim(),
         status: 'pending'
       });
+    } else if (type === 'designs') {
+      try {
+        const designsData = JSON.parse(content.trim());
+        steps.push({
+          type: 'Designs',
+          components: designsData.components || [],
+          status: 'pending'
+        });
+      } catch (error) {
+        console.error('Failed to parse designs JSON:', error);
+      }
     }
   }
 
@@ -73,13 +65,15 @@ export default function GeneratorPage() {
   const prompt = params.prompt ? decodeURIComponent(params.prompt as string) : '';
   
   const [userPrompt, setUserPrompt] = useState("");
-  const [llmMessages, setLlmMessages] = useState<{role: "user" | "assistant", content: string;}[]>([]);
+  const [llmMessages, setLlmMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [templateSet, setTemplateSet] = useState(false);
   const [steps, setSteps] = useState<Step[]>([]);
   const [fileStructure, setFileStructure] = useAtom(fileStructureAtom);
   const [selectedFile, setSelectedFile] = useAtom(selectedFileAtom);
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
+  const [viewMode, setViewMode] = useState<'steps' | 'designs'>('steps');
+  const [designComponents, setDesignComponents] = useState<ComponentDesign[]>([]);
 
   useEffect(() => {
     let updateHappened = false;
@@ -233,6 +227,64 @@ export default function GeneratorPage() {
     
   }, [steps]);
 
+  const handleDesignSelect = async (componentPath: string, designPath: string) => {
+    // Get the default file path by replacing the selected design path's filename with 'default'
+    const pathParts = designPath.split('/');
+    const fileName = pathParts[pathParts.length - 1];
+    const fileExt = fileName.includes('.') ? fileName.substring(fileName.lastIndexOf('.')) : '';
+    const defaultPath = designPath.replace(fileName, `default${fileExt}`);
+    
+    try {
+      // This is where we would read the selected design file and update the default file
+      // For now, we're just going to update the fileStructure
+      
+      // Find the design file in our file structure
+      const root: FileSystemNode = fileStructure || {
+        id: 'root',
+        name: 'root',
+        type: 'folder',
+        path: '/',
+        children: []
+      };
+      
+      // Helper function to find a file node by path
+      const findFileNode = (node: FileSystemNode, path: string): FileSystemNode | null => {
+        if (node.path === path && node.type === 'file') {
+          return node;
+        }
+        if (node.type === 'folder' && node.children) {
+          for (const child of node.children) {
+            const found = findFileNode(child, path);
+            if (found) return found;
+          }
+        }
+        return null;
+      };
+      
+      const designFileNode = findFileNode(root, designPath);
+      const defaultFileNode = findFileNode(root, defaultPath);
+      
+      if (designFileNode && defaultFileNode) {
+        // Update the default file with the content from the design file
+        defaultFileNode.content = designFileNode.content;
+        setFileStructure({...root});
+        
+        // Open the default file in the editor
+        setSelectedFile(defaultPath);
+      }
+    } catch (error) {
+      console.error('Failed to update design:', error);
+    }
+  };
+
+  useEffect(() => {
+    // Extract design components from steps
+    const designsStep = steps.find(step => step.type === 'Designs');
+    if (designsStep && designsStep.components) {
+      setDesignComponents(designsStep.components);
+    }
+  }, [steps]);
+
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">
       <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
@@ -243,32 +295,57 @@ export default function GeneratorPage() {
       <div className="flex-1 overflow-hidden">
         <div className="h-[calc(100vh-5rem)] grid grid-cols-4 gap-6 p-6">
           <div className="col-span-1 space-y-6 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            <div className="bg-gray-800 rounded-lg p-4">
-              <h2 className="text-lg font-semibold text-gray-100 mb-4">Steps</h2>
-              <div className="space-y-2">
-                {steps.map((step, index) => (
-                  <div
-                    key={index}
-                    className={`p-3 rounded ${
-                      step.status === 'completed'
-                        ? 'bg-green-500/10 text-green-400'
-                        : 'bg-gray-700 text-gray-300'
-                    }`}
-                  >
-                    <div className="font-medium">
-                      {step.type === 'CreateFile' ? 'Create File' : 
-                       step.type === 'UpdateFile' ? 'Update File' : 'Run Command'}
-                    </div>
-                    <div className="text-sm opacity-80">
-                      {step.type === 'CreateFile' ? step.path : step.type === 'UpdateFile' ? step.path : step.command}
-                    </div>
-                  </div>
-                ))}
+            {loading || !templateSet ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
               </div>
-            </div>
+            ) : (
+              <>
+                <div className="bg-gray-800 rounded-lg p-4">
+                  <div className="flex items-center mb-4">
+                    <h2 className="text-lg font-semibold text-gray-100 flex-1">
+                      {viewMode === 'steps' ? 'Steps' : 'Component Designs'}
+                    </h2>
+                    <button 
+                      onClick={() => setViewMode(viewMode === 'steps' ? 'designs' : 'steps')}
+                      className="bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1 rounded text-sm transition-colors"
+                    >
+                      Switch to {viewMode === 'steps' ? 'Designs' : 'Steps'}
+                    </button>
+                  </div>
+                  
+                  {viewMode === 'steps' ? (
+                    <div className="space-y-2">
+                      {steps.map((step, index) => (
+                        <div
+                          key={index}
+                          className={`p-3 rounded ${
+                            step.status === 'completed'
+                              ? 'bg-green-500/10 text-green-400'
+                              : 'bg-gray-700 text-gray-300'
+                          }`}
+                        >
+                          <div className="font-medium">
+                            {step.type === 'CreateFile' ? 'Create File' : 
+                             step.type === 'UpdateFile' ? 'Update File' : 
+                             step.type === 'Designs' ? 'Component Designs' : 'Run Command'}
+                          </div>
+                          <div className="text-sm opacity-80">
+                            {step.type === 'CreateFile' || step.type === 'UpdateFile' ? step.path : 
+                             step.type === 'Shell' ? step.command :
+                             step.type === 'Designs' ? `${step.components?.length || 0} components` : ''}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <DesignSelector 
+                      components={designComponents} 
+                      onSelectDesign={handleDesignSelect} 
+                    />
+                  )}
+                </div>
 
-            {!(loading || !templateSet) && (
-              <div className="bg-gray-800 rounded-lg p-4">
                 <textarea
                   value={userPrompt}
                   onChange={(e) => setUserPrompt(e.target.value)}
@@ -320,12 +397,12 @@ export default function GeneratorPage() {
                       setLoading(false);
                     }
                   }}
-                  className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded"
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded transition-colors"
                   disabled={loading || !userPrompt.trim()}
                 >
                   Send
                 </button>
-              </div>
+              </>
             )}
           </div>
 

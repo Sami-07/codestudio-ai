@@ -1,14 +1,5 @@
 import { atom } from 'jotai';
-
-// Define the structure for a file or folder node
-export interface FileSystemNode {
-  id: string; // Unique identifier (e.g., path)
-  name: string;
-  type: 'file' | 'folder';
-  path: string;
-  content?: string; // Only for files
-  children?: FileSystemNode[]; // Only for folders
-}
+import { FileSystemNode } from '@/types';
 
 // Atom to hold the root of the file structure
 export const fileStructureAtom = atom<FileSystemNode | null>(null);

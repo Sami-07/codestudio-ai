@@ -1,5 +1,5 @@
 import { XMLParser } from 'fast-xml-parser';
-import { FileSystemNode } from '@/store/atoms';
+import { FileSystemNode } from '@/types';
 
 // Helper function to ensure structure is treated as an array
 const ensureArray = (obj: any) => (Array.isArray(obj) ? obj : obj ? [obj] : []);
@@ -24,6 +24,14 @@ function buildTree(actions: any[]): FileSystemNode {
     // Handle both attribute formats: '@_type' and 'type'
     const actionType = action['@_type'] || action.type;
     const filePath = (action['@_filePath'] || action.filePath || '').trim();
+    
+    // Handle designs action separately
+    if (actionType === 'designs') {
+      console.log('Processing designs action');
+      // Design actions don't modify the file structure directly
+      // They will be handled by the UI components
+      return;
+    }
     
     if (actionType !== 'file' || !filePath) {
       // Log non-file actions or missing paths
