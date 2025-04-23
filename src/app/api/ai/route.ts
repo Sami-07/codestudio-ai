@@ -1,44 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
-
 import Anthropic from "@anthropic-ai/sdk";
 import { rules as reactRules } from "@/lib/react/rules";
-import { rules as nodeRules } from "@/lib/node/rules"
+import { rules as nodeRules } from "@/lib/node/rules";
 import { getSystemPrompt } from "@/lib/prompt";
-import axios from "axios";
-export async function GET(req: NextRequest) {
+import { TextBlock } from "@anthropic-ai/sdk/resources";
 
+export async function POST(req: NextRequest) {
+  try {
+    const { messages } = await req.json();
+
+    // if (!projectType || typeof projectType !== 'string') {
+    //   return NextResponse.json({ error: "Prompt is required and must be a string" }, { status: 400 });
+    // }
 
     const anthropic = new Anthropic();
-    // const userPrompt = req.nextUrl.searchParams.get('prompt');
-    const userPrompt = "Make a simple todo list app";
-    const res = await axios.get("http://localhost:3000/api/ai/template");
-    const projectType = res.data;
-    console.log(projectType);
 
-    let rules = [];
-    if (projectType === "react") {
-        rules = reactRules(userPrompt);
-        //! UI structure Prompt
-    } else if (projectType === "node") {
-        rules = nodeRules(userPrompt);
-        //! UI structure Prompt
-    }
-    else {
-        return NextResponse.json({
-            error: "Invalid project type"
-        }, { status: 400 });
-    }
-
-    await anthropic.messages.stream({
-        model: 'claude-3-7-sonnet-20250219',
-        messages: [
-            ...rules.map((rule) => ({ role: "user" as const, content: rule })),
-        ],
-        max_tokens: 1024, 
-        temperature: 0.2,
-        system: getSystemPrompt(),
-    }).on('text', (text) => {
-        console.log(text);
+  
+    
+    const response = await anthropic.messages.create({
+      model: 'claude-3-7-sonnet-20250219',
+      messages: messages,
+      max_tokens: 8000,
+      temperature: 0.1,
+      system: getSystemPrompt(),
     });
 
+    return NextResponse.json({
+      response: (response.content[0] as TextBlock).text
+    });
+
+  } catch (error) {
+    console.error("Error in AI route:", error);
+    const errorMessage = error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json({ error: "Failed to process request", details: errorMessage }, { status: 500 });
+  }
 }
