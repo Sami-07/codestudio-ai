@@ -33,8 +33,8 @@ function findFile(node: FileSystemNode | null, path: string): FileSystemNode | n
 function parseXml(xml: string): Step[] {
   const steps: Step[] = [];
   
-  // First, try to match each boltAction tag
-  const actionRegex = /<boltAction\s+([^>]*)>([\s\S]*?)<\/boltAction>/g;
+  // First, try to match each studioAction tag
+  const actionRegex = /<studioAction\s+([^>]*)>([\s\S]*?)<\/studioAction>/g;
   let actionMatch;
 
   while ((actionMatch = actionRegex.exec(xml)) !== null) {

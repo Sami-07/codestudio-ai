@@ -94,14 +94,14 @@ function buildTree(actions: any[]): FileSystemNode {
 }
 
 /**
- * Parses the Bolt XML string and converts it into a FileSystemNode structure.
+ * Parses the studio XML string and converts it into a FileSystemNode structure.
  * Handles potential XML parsing errors and different XML formats.
  */
-export function parseBoltXml(xmlString: string): FileSystemNode {
+export function parsestudioXml(xmlString: string): FileSystemNode {
   // If the XML doesn't start with an XML declaration, add a wrapper
   let xmlToParse = xmlString;
-  if (!xmlString.trim().startsWith('<?xml') && !xmlString.trim().startsWith('<boltArtifact')) {
-    xmlToParse = `<boltArtifact>${xmlString}</boltArtifact>`;
+  if (!xmlString.trim().startsWith('<?xml') && !xmlString.trim().startsWith('<studioArtifact')) {
+    xmlToParse = `<studioArtifact>${xmlString}</studioArtifact>`;
   }
 
   const parser = new XMLParser({
@@ -112,29 +112,29 @@ export function parseBoltXml(xmlString: string): FileSystemNode {
     parseTagValue: true,
     parseAttributeValue: true,
     isArray: (name, jpath, isLeafNode, isAttribute) => {
-      // Ensure boltAction is always treated as an array
-      return name === 'boltAction';
+      // Ensure studioAction is always treated as an array
+      return name === 'studioAction';
     },
   });
 
   try {
     const jsonObj = parser.parse(xmlToParse);
 
-    // Navigate to the boltAction array
-    let boltArtifact = jsonObj.boltArtifact;
+    // Navigate to the studioAction array
+    let studioArtifact = jsonObj.studioArtifact;
     
     // Handle case where XML might be wrapped in another tag
-    if (!boltArtifact && jsonObj.root && jsonObj.root.boltArtifact) {
-      boltArtifact = jsonObj.root.boltArtifact;
+    if (!studioArtifact && jsonObj.root && jsonObj.root.studioArtifact) {
+      studioArtifact = jsonObj.root.studioArtifact;
     }
     
-    if (!boltArtifact) {
-      console.warn('No <boltArtifact> found in XML. Trying to parse directly...');
+    if (!studioArtifact) {
+      console.warn('No <studioArtifact> found in XML. Trying to parse directly...');
       
-      // Try to find any boltAction elements regardless of structure
+      // Try to find any studioAction elements regardless of structure
       let actions = [];
-      if (jsonObj.boltAction) {
-        actions = ensureArray(jsonObj.boltAction);
+      if (jsonObj.studioAction) {
+        actions = ensureArray(jsonObj.studioAction);
       } else {
         // Last resort: search for any object with filePath attribute
         const findFileActions = (obj: any): any[] => {
@@ -164,11 +164,11 @@ export function parseBoltXml(xmlString: string): FileSystemNode {
       return buildTree(actions);
     }
 
-    // Handle case where there might be one or multiple boltAction tags
-    const actions = ensureArray(boltArtifact.boltAction);
+    // Handle case where there might be one or multiple studioAction tags
+    const actions = ensureArray(studioArtifact.studioAction);
 
     if (!actions || actions.length === 0) {
-      console.warn('No <boltAction> tags found within <boltArtifact>.');
+      console.warn('No <studioAction> tags found within <studioArtifact>.');
       // Return a default empty root structure
       return { id: 'root', name: 'Empty Project', type: 'folder', path: '/', children: [] };
     }
@@ -177,7 +177,7 @@ export function parseBoltXml(xmlString: string): FileSystemNode {
     return buildTree(actions);
 
   } catch (error) {
-    console.error("Error parsing Bolt XML:", error);
+    console.error("Error parsing studio XML:", error);
     // You might want to return a default structure or re-throw
     throw new Error(`Failed to parse XML: ${error instanceof Error ? error.message : String(error)}`);
   }

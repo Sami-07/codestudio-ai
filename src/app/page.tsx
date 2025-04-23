@@ -21,8 +21,8 @@ export default function Home() {
       <main className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-8 text-center">
         <Image
           className="mx-auto mb-6"
-          src="/bolt-logo.svg"
-          alt="Bolt Logo"
+          src="/studio-logo.svg"
+          alt="studio Logo"
           width={80}
           height={80}
           priority
@@ -52,7 +52,7 @@ export default function Home() {
         </form>
       </main>
       <footer className="mt-8 text-center text-gray-500 text-sm">
-        Powered by Bolt AI
+        Powered by studio AI
       </footer>
     </div>
   );
