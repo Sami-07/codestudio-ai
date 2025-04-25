@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200" fill="none">
+  <!-- Main circle background -->
+  <circle cx="100" cy="100" r="90" fill="url(#grad1)" />
+  
+  <!-- Code brackets with glow effect -->
+  <g filter="url(#glow)">
+    <!-- Left bracket -->
+    <path d="M80 60C70 60 65 65 65 75V85C65 90 60 95 55 95C60 95 65 100 65 105V115C65 125 70 130 80 130" 
+          stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+    
+    <!-- Right bracket -->
+    <path d="M120 60C130 60 135 65 135 75V85C135 90 140 95 145 95C140 95 135 100 135 105V115C135 125 130 130 120 130" 
+          stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+  
+  <!-- Central sparkle representing AI -->
+  <g filter="url(#glow)">
+    <circle cx="100" cy="95" r="10" fill="white" />
+    <path d="M100 75V115" stroke="white" stroke-width="4" stroke-linecap="round" />
+    <path d="M80 95H120" stroke="white" stroke-width="4" stroke-linecap="round" />
+    <path d="M87 82L113 108" stroke="white" stroke-width="3" stroke-linecap="round" />
+    <path d="M113 82L87 108" stroke="white" stroke-width="3" stroke-linecap="round" />
+  </g>
+  
+  <!-- Definitions for gradients and filters -->
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="grad1" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#4F46E5" />
+      <stop offset="50%" stop-color="#7E22CE" />
+      <stop offset="100%" stop-color="#A21CAF" />
+    </linearGradient>
+    
+    <!-- Glow effect -->
+    <filter id="glow" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="2" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+</svg> 

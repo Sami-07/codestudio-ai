@@ -2,9 +2,9 @@
 
 import React, { useCallback, useState } from 'react';
 import { useAtom } from 'jotai';
-import { fileStructureAtom, selectedFileAtom, FileSystemNode } from '@/store/atoms';
+import { fileStructureAtom, selectedFileAtom,  } from '@/store/atoms';
 import { ChevronDown, ChevronRight, File, Folder } from 'lucide-react';
-
+import { FileSystemNode } from '@/types';
 interface FileNodeProps {
   node: FileSystemNode;
   onSelect: (path: string) => void;
@@ -42,8 +42,8 @@ const FileNode: React.FC<FileNodeProps> = ({
   return (
     <div className="select-none" style={{ paddingLeft: `${level * 16}px` }}>
       <div
-        className={`flex items-center py-1 px-2 rounded ${
-          isSelected ? 'bg-blue-100 text-blue-950' : 'hover:bg-gray-700'
+        className={`flex text-white items-center py-1 px-2 rounded ${
+          isSelected ? 'bg-blue-400 text-blue-950' : 'hover:bg-gray-700'
         } cursor-pointer`}
         onClick={handleSelect}
         role="button"

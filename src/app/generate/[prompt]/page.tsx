@@ -12,6 +12,9 @@ import { Loader2 } from 'lucide-react';
 import { WebContainer, FileSystemTree } from '@webcontainer/api';
 import { useWebContainer } from '@/hooks/useWebContainer';
 
+// Add scrollbar-hide utility class
+const scrollbarHideClass = "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
+
 // Helper function to parse XML into steps
 function parseXml(xml: string): Step[] {
   const steps: Step[] = [];
@@ -512,35 +515,50 @@ export default function GeneratorPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex flex-col">
-      <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
-        <h1 className="text-xl font-semibold text-gray-100">Code Generator</h1>
-        <p className="text-sm text-gray-400 mt-1">Prompt: {prompt}</p>
+    <div className="min-h-screen bg-gray-950 flex flex-col">
+      <header className="bg-gray-900 border-b border-gray-800 px-6 py-4 sticky top-0 z-10 shadow-md">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-white tracking-tight">Code Generator</h1>
+            <p className="text-sm text-gray-400 mt-1 max-w-2xl truncate">{prompt}</p>
+          </div>
+          {deployUrl && (
+            <a 
+              href={deployUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-white bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-lg flex items-center gap-2"
+            >
+              <span>View Deployed Site</span>
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+            </a>
+          )}
+        </div>
       </header>
       
       <div className="flex-1 overflow-hidden">
-        <div className="h-[calc(100vh-5rem)] grid grid-cols-4 gap-6 p-6">
-          <div className="col-span-1 space-y-6 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            {(loading && !templateSet) || (loading && steps.length === 0) ? ( // Show loader during initial setup or full loading
+        <div className="h-[calc(100vh-5rem)] grid grid-cols-4 gap-4 p-4">
+          <div className={`col-span-1 space-y-4 overflow-y-auto ${scrollbarHideClass}`}>
+            {(loading && !templateSet) || (loading && steps.length === 0) ? (
               <div className="flex items-center justify-center h-full">
-                <Loader2 className="h-8 w-8 animate-spin text-indigo-500" />
+                <div className="flex flex-col items-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-indigo-500 mb-2" />
+                  <p className="text-gray-400 text-sm font-medium">Generating your code...</p>
+                </div>
               </div>
             ) : (
               <>
-                <div className="bg-gray-800 rounded-lg p-4">
+                <div className="bg-gray-900 rounded-lg p-4 border border-gray-800 shadow-lg">
                   <div className="flex items-center mb-4">
-                    <h2 className="text-lg font-semibold text-gray-100 flex-1">
+                    <h2 className="text-lg font-bold text-white flex-1">
                       {viewMode === 'steps' ? 'Steps' : 'Component Designs'}
                     </h2>
-                    {/* Only show switch button if designs are available */} 
-                    {/* {designComponents.length > 0 && ( */}
-                      <button 
-                        onClick={() => setViewMode(viewMode === 'steps' ? 'designs' : 'steps')}
-                        className="bg-gray-700 hover:bg-gray-600 text-gray-200 px-3 py-1 rounded text-sm transition-colors"
-                      >
-                        Switch to {viewMode === 'steps' ? 'Designs' : 'Steps'}
-                      </button>
-                    {/* )} */}
+                    {/* <button 
+                      onClick={() => setViewMode(viewMode === 'steps' ? 'designs' : 'steps')}
+                      className="bg-gray-800 hover:bg-gray-700 text-gray-200 px-3 py-1.5 rounded-md text-sm font-medium transition-colors"
+                    >
+                      Switch to {viewMode === 'steps' ? 'Designs' : 'Steps'}
+                    </button> */}
                   </div>
                   
                   {viewMode === 'steps' ? (
@@ -548,18 +566,21 @@ export default function GeneratorPage() {
                       {steps.map((step, index) => (
                         <div
                           key={index}
-                          className={`p-3 rounded ${
+                          className={`p-3 rounded-md border ${
                             step.status === 'completed'
-                              ? 'bg-green-500/10 text-green-400'
-                              : 'bg-gray-700 text-gray-300'
-                          }`}
+                              ? 'bg-green-950/50 border-green-800 text-green-400'
+                              : 'bg-gray-800 border-gray-700 text-gray-300'
+                          } transition-all hover:translate-y-[-1px]`}
                         >
-                          <div className="font-medium">
+                          <div className="font-medium flex items-center gap-2">
+                            {step.status === 'completed' && (
+                              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            )}
                             {step.type === 'CreateFile' ? 'Create File' : 
                              step.type === 'UpdateFile' ? 'Update File' : 
                              step.type === 'Designs' ? 'Component Designs' : 'Run Command'}
                           </div>
-                          <div className="text-sm opacity-80">
+                          <div className="text-sm opacity-80 mt-1">
                             {step.type === 'CreateFile' || step.type === 'UpdateFile' ? step.path : 
                              step.type === 'Shell' ? step.command :
                              step.type === 'Designs' ? `${step.components?.length || 0} components` : ''}
@@ -575,164 +596,225 @@ export default function GeneratorPage() {
                   )}
                 </div>
 
-                <textarea
-                  value={userPrompt}
-                  onChange={(e) => setUserPrompt(e.target.value)}
-                  className="w-full bg-gray-700 text-gray-100 rounded p-2 mb-2"
-                  placeholder="Enter your message..."
-                />
-                <button
-                  onClick={async () => {
-                    try {
-                      setLoading(true);
-                      const response = await fetch('/api/ai', {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                          messages: [
-                            ...llmMessages,
-                            { role: "user", content: userPrompt }
-                          ]
+                <div className="bg-gray-900 rounded-lg p-4 border border-gray-800 shadow-lg">
+                  <h2 className="text-lg font-bold text-white mb-3">Chat</h2>
+                  <textarea
+                    value={userPrompt}
+                    onChange={(e) => setUserPrompt(e.target.value)}
+                    className="w-full bg-gray-800 text-gray-100 rounded-md p-3 mb-3 border border-gray-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
+                    placeholder="Enter your message..."
+                    rows={4}
+                  />
+                  <button
+                    onClick={async () => {
+                      try {
+                        setLoading(true);
+                        const response = await fetch('/api/ai', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            messages: [
+                              ...llmMessages,
+                              { role: "user", content: userPrompt }
+                            ]
+                          
+
+                            //asdf
+                          })
+                        });
+
+                        if (!response.ok) {
+                          throw new Error('Failed to send message');
+                        }
+
+                        const { response: aiResponse } = await response.json();
                         
+                        setLlmMessages(messages => [
+                          ...messages,
+                          { role: "user", content: userPrompt },
+                          { role: "assistant", content: aiResponse }
+                        ]);
 
-                          //asdf
-                        })
-                      });
+                        setSteps(s => [
+                          ...s,
+                          ...parseXml(aiResponse).map(x => ({
+                            ...x,
+                            status: "pending" as const
+                          }))
+                        ]);
 
-                      if (!response.ok) {
-                        throw new Error('Failed to send message');
+                        setUserPrompt('');
+
+                        
+                      } catch (error) {
+                        console.error('Failed to send message:', error);
+                      } finally {
+                        setLoading(false);
                       }
-
-                      const { response: aiResponse } = await response.json();
-                      
-                      setLlmMessages(messages => [
-                        ...messages,
-                        { role: "user", content: userPrompt },
-                        { role: "assistant", content: aiResponse }
-                      ]);
-
-                      setSteps(s => [
-                        ...s,
-                        ...parseXml(aiResponse).map(x => ({
-                          ...x,
-                          status: "pending" as const
-                        }))
-                      ]);
-
-                      setUserPrompt('');
-                    } catch (error) {
-                      console.error('Failed to send message:', error);
-                    } finally {
-                      setLoading(false);
-                    }
-                  }}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded transition-colors"
-                  disabled={loading || !userPrompt.trim()}
-                >
-                  Send
-                </button>
+                    }}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-md transition-colors font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
+                    disabled={loading || !userPrompt.trim()}
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        Send
+                      </>
+                    )}
+                  </button>
+                </div>
               </>
             )}
           </div>
-
-          <div className="col-span-1 bg-gray-800 rounded-lg p-4 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            <h2 className="text-lg font-semibold text-gray-100 mb-4">Files</h2>
-            <div className="h-full overflow-auto font-mono text-sm [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+          
+          <div className={`col-span-1 bg-gray-900 rounded-lg p-4 border border-gray-800 shadow-lg overflow-y-auto ${scrollbarHideClass}`}>
+            <div className="flex items-center mb-4">
+              <h2 className="text-lg font-bold text-white flex-1">Files</h2>
+              {fileStructure && (
+                <span className="bg-gray-800 text-gray-400 text-xs px-2 py-1 rounded-md">
+                  {fileStructure.children?.length || 0} items
+                </span>
+              )}
+            </div>
+            <div className={`h-[calc(100%-3rem)] overflow-auto font-mono text-sm ${scrollbarHideClass}`}>
               <FileExplorer />
             </div>
           </div>
 
-          <div className="col-span-2 bg-gray-800 rounded-lg p-4 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-            <div className="flex space-x-4 mb-4">
-              <button
-                onClick={() => setActiveTab('code')}
-                className={`px-4 py-2 rounded ${
-                  activeTab === 'code'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-700 text-gray-300'
-                }`}
-              >
-                Code
-              </button>
-              <button
-                onClick={() => setActiveTab('preview')}
-                className={`px-4 py-2 rounded ${
-                  activeTab === 'preview'
-                    ? 'bg-purple-600 text-white'
-                    : 'bg-gray-700 text-gray-300'
-                }`}
-              >
-                Preview
-              </button>
+          <div className="col-span-2 bg-gray-900 rounded-lg border border-gray-800 shadow-lg overflow-hidden">
+            <div className="flex items-center p-3 border-b border-gray-800 bg-gray-900">
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setActiveTab('code')}
+                  className={`px-4 py-2 rounded-md font-medium text-sm transition-colors ${
+                    activeTab === 'code'
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+                    Code
+                  </div>
+                </button>
+                <button
+                  onClick={() => setActiveTab('preview')}
+                  className={`px-4 py-2 rounded-md font-medium text-sm transition-colors ${
+                    activeTab === 'preview'
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                    Preview
+                  </div>
+                </button>
+              </div>
+              
               <button
                 onClick={handleDeploy}
                 disabled={deploying || !fileStructure}
-                className={`px-4 py-2 rounded ml-auto ${
-                  deploying
-                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                    : 'bg-green-600 hover:bg-green-700 text-white'
+                className={`px-4 py-2 rounded-md ml-auto text-sm font-medium transition-colors ${
+                  deploying || !fileStructure
+                    ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg'
                 }`}
               >
                 {deploying ? (
-                  <span className="flex items-center">
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
                     Deploying...
                   </span>
                 ) : (
-                  'Deploy'
+                  <span className="flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"></path></svg>
+                    Deploy
+                  </span>
                 )}
               </button>
             </div>
             
             {deployUrl && (
-              <div className="mb-4 p-3 bg-green-500/20 text-green-300 rounded-md flex items-center justify-between">
-                <span>Deployed successfully!</span>
+              <div className="mx-3 my-2 p-3 bg-green-950 border border-green-700 text-green-300 rounded-md flex items-center justify-between shadow-inner">
+                <span className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  Deployed successfully!
+                </span>
                 <a 
                   href={deployUrl} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-white bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm"
+                  className="text-white bg-green-700 hover:bg-green-800 px-3 py-1 rounded-md text-sm transition-colors"
                 >
                   Visit Site
                 </a>
               </div>
             )}
             
-            <div className="h-[calc(100%-4rem)]">
+            <div className="h-[calc(100%-5rem)]">
               {activeTab === 'code' ? (
                 selectedFile ? (
                   <div className="h-full flex flex-col">
-                    <div className="border-b border-gray-700 p-2">
-                      <span className="text-gray-300">{selectedFile}</span>
+                    <div className="bg-gray-800 border-b border-gray-700 p-2 flex items-center">
+                      <span className="text-gray-300 font-medium">
+                        <span className="text-gray-500 mr-1">{selectedFile.split('/').slice(0, -1).join('/')}/</span>
+                        {selectedFile.split('/').pop()}
+                      </span>
                     </div>
-                    <div className="flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+                    <div className={`flex-1 overflow-y-auto ${scrollbarHideClass}`}>
                       <CodeEditor />
                     </div>
                   </div>
                 ) : (
-                  <div className="flex h-full items-center justify-center text-gray-500">
-                    Select a file to view or edit its content.
+                  <div className="flex h-full items-center justify-center text-gray-400 flex-col p-8">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-4 text-gray-600"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    <p className="text-center">Select a file from the explorer to view or edit its content.</p>
                   </div>
                 )
-              ) : (
-                <div>
-                  {url?<iframe className='w-full h-full border' src={url}/>:<p className='text-white w-full h-full border '>loading.....</p>}
+              ) : ( 
+                <div className='w-full h-full flex items-center justify-center bg-white'>
+                  {url ? 
+                    <iframe className='w-full h-full border-0' src={url}/> : 
+                    <div className="flex flex-col items-center justify-center text-gray-500 h-full w-full bg-gray-950">
+                      <Loader2 className="h-8 w-8 animate-spin mb-4" />
+                      <p>Loading preview...</p>
+                    </div>
+                  }
                 </div>
               )}
             </div>
           </div>
+
         </div>
       </div>
 
       {(loading || !templateSet) && (
-        <div className="fixed inset-0 bg-gray-900/50 flex items-center justify-center">
-          <div className="bg-gray-800 rounded-lg p-8 flex items-center space-x-4">
-            <Loader2 className="w-6 h-6 text-purple-500 animate-spin" />
-            <span className="text-gray-100">
-              {!templateSet ? 'Determining project type...' : 'Generating code...'}
-            </span>
+        <div className="fixed inset-0 bg-gray-950/80 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-lg p-8 shadow-2xl border border-gray-800 max-w-md w-full">
+            <div className="flex flex-col items-center text-center">
+              <div className="relative mb-6">
+                <Loader2 className="w-12 h-12 text-indigo-500 animate-spin" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="h-3 w-3 bg-indigo-600 rounded-full"></div>
+                </div>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">
+                {!templateSet ? 'Analyzing Your Prompt' : 'Generating Code'}
+              </h3>
+              <p className="text-gray-400 max-w-xs">
+                {!templateSet 
+                  ? 'Determining the best project structure based on your requirements...' 
+                  : 'Creating files and setting up your project. This may take a moment...'}
+              </p>
+            </div>
           </div>
         </div>
       )}
