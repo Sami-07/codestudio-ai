@@ -11,6 +11,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
     "@monaco-editor/react": "^4.7.0",
+    "@webcontainer/api": "^1.6.1",
     "ai": "^4.3.9",
     "axios": "^1.8.4",
     "fast-xml-parser": "^5.2.1",

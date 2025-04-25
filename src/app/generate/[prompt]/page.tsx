@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { useSetAtom, useAtom } from 'jotai';
-import { fileStructureAtom, selectedFileAtom, generationStatusAtom, generationErrorAtom } from '@/store/atoms';
+import { fileStructureAtom, selectedFileAtom, generationStatusAtom, generationErrorAtom, webContainerAtom } from '@/store/atoms';
 import { FileSystemNode, Step, Message, ComponentDesign } from '@/types';
 import FileExplorer from '@/components/FileExplorer';
 import CodeEditor from '@/components/CodeEditor';
 import DesignSelector from '@/components/DesignSelector';
 import { Loader2 } from 'lucide-react';
+import { WebContainer } from '@webcontainer/api';
 
 // Helper function to parse XML into steps
 function parseXml(xml: string): Step[] {
@@ -74,7 +75,110 @@ export default function GeneratorPage() {
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
   const [viewMode, setViewMode] = useState<'steps' | 'designs'>('steps');
   const [designComponents, setDesignComponents] = useState<ComponentDesign[]>([]);
-
+  const [webcontainer,setWebcontainer]=useAtom(webContainerAtom);
+  const [url, setUrl]=useState("");
+  const [wcfs,setWcfs]=useState(null);
+  async function WebContainerInitializer(){
+    console.log("booting.....")
+    if(webcontainer) return 
+    const webcontainerInstance = await WebContainer.boot();
+    setWebcontainer(webcontainerInstance);
+    console.log("booted!!!")
+   
+  }  
+  function convertToWebContainerFormat(rootNode) {
+    const files = {};
+  
+    // Helper function to recursively process nodes
+    function processNode(node) {
+      // For a file node from the input
+      if (node.type === 'file') {
+        // Return the structure { file: { contents: ... } }
+        return {
+          file: {
+            // Use empty string if content is missing or null
+            contents: node.content || ''
+          }
+        };
+      }
+      // For a folder node from the input
+      else if (node.type === 'folder') {
+        const directoryContents = {};
+        // Process children if they exist
+        if (node.children) {
+          for (const child of node.children) {
+            // Recursively process each child and add it to the directoryContents
+            // using the child's name as the key.
+            directoryContents[child.name] = processNode(child);
+          }
+        }
+       
+        // Return the structure { directory: { ...contents... } }
+        return {
+          directory: directoryContents
+        };
+      }
+      // Handle potential unexpected node types if necessary
+      return null;
+    }
+  
+    // Start processing from the children of the root node
+    // The root node itself (e.g., "todo-app") is usually not represented
+    // as a top-level key in the WebContainer format, only its contents are.
+    if (rootNode && rootNode.children) {
+      for (const child of rootNode.children) {
+        // The name of the child node becomes the key in the final 'files' object
+        files[child.name] = processNode(child);
+      }
+    }
+  
+    return files;
+  }
+  
+  async function FileHandlerWC() {
+    const localwcfs=convertToWebContainerFormat(fileStructure);
+    await webcontainer?.mount(localwcfs);
+    setWcfs(localwcfs);
+    console.log("Files mounted.");
+  
+      console.log("Installing dependencies...");
+      const installProcess = await webcontainer?.spawn('npm', ['i']);
+  
+      installProcess?.output.pipeTo(new WritableStream({
+        write(data) {
+          console.log(data);
+        }
+      }));
+       // Wait for the installation process to complete
+       const installExitCode = await installProcess?.exit;
+       if (installExitCode !== 0) {
+         throw new Error(`npm install failed with exit code ${installExitCode}`);
+       }
+   
+       console.log("Starting development server...");
+       const devProcess = await webcontainer?.spawn('npm', ['run', 'dev']);
+   
+       devProcess?.output.pipeTo(new WritableStream({
+         write(data) {
+           console.log(data);
+         }
+       }));
+   
+       webcontainer?.on('server-ready', (port, url) => {
+         console.log(`Server is ready at ${url}`);
+         setUrl(url);
+       });
+  }
+  
+  
+  useEffect(()=>{
+    WebContainerInitializer();
+  },[])
+  
+  
+  
+  
+  
   useEffect(() => {
     let updateHappened = false;
     
@@ -226,7 +330,7 @@ export default function GeneratorPage() {
     console.log("steps", steps);
     
   }, [steps]);
-
+ 
   const handleDesignSelect = async (componentPath: string, designPath: string) => {
     // Get the default file path by replacing the selected design path's filename with 'default'
     const pathParts = designPath.split('/');
@@ -284,6 +388,19 @@ export default function GeneratorPage() {
       setDesignComponents(designsStep.components);
     }
   }, [steps]);
+
+  useEffect(()=>{
+    async function init() {
+      const updatedWcfs=convertToWebContainerFormat(fileStructure);
+      setWcfs(updatedWcfs);
+      await webcontainer?.mount(updatedWcfs);
+    }
+    init();
+  },[fileStructure])
+
+  useEffect(()=>{
+    FileHandlerWC();
+  },[webcontainer])
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">
@@ -367,6 +484,8 @@ export default function GeneratorPage() {
                             { role: "user", content: userPrompt }
                           ]
                         
+
+                          //asdf
                         })
                       });
 
@@ -453,8 +572,8 @@ export default function GeneratorPage() {
                   </div>
                 )
               ) : (
-                <div className="w-full h-full bg-white rounded">
-                  {/* Preview iframe would go here */}
+                <div>
+                  {url?<iframe className='w-full h-full border' src={url}/>:<p className='text-white w-full h-full border '>loading.....</p>}
                 </div>
               )}
             </div>

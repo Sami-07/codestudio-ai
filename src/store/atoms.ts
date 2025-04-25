@@ -1,5 +1,6 @@
 import { atom } from 'jotai';
 import { FileSystemNode } from '@/types';
+import { WebContainer } from '@webcontainer/api';
 
 // Atom to hold the root of the file structure
 export const fileStructureAtom = atom<FileSystemNode | null>(null);
@@ -39,3 +40,5 @@ export const selectedFileContentAtom = atom<string | undefined>((get) => {
   const fileNode = findFileNode(structure, selectedPath);
   return fileNode?.content;
 }); 
+
+export const webContainerAtom=atom<WebContainer | null>(null);
