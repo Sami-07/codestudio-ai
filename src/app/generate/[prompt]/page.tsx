@@ -10,6 +10,7 @@ import CodeEditor from '@/components/CodeEditor';
 import DesignSelector from '@/components/DesignSelector';
 import { Loader2 } from 'lucide-react';
 import { WebContainer } from '@webcontainer/api';
+import { useWebContainer } from '@/hooks/useWebContainer';
 
 // Helper function to parse XML into steps
 function parseXml(xml: string): Step[] {
@@ -29,7 +30,7 @@ function parseXml(xml: string): Step[] {
     const type = typeMatch ? typeMatch[1] : null;
     const filePath = filePathMatch ? filePathMatch[1] : null;
 
-    console.log("Parsed attributes:", { type, filePath, content: content.trim() });
+
 
     if (type === 'file' && filePath) {
       steps.push({
@@ -75,17 +76,9 @@ export default function GeneratorPage() {
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
   const [viewMode, setViewMode] = useState<'steps' | 'designs'>('steps');
   const [designComponents, setDesignComponents] = useState<ComponentDesign[]>([]);
-  const [webcontainer,setWebcontainer]=useAtom(webContainerAtom);
   const [url, setUrl]=useState("");
-  const [wcfs,setWcfs]=useState(null);
-  async function WebContainerInitializer(){
-    console.log("booting.....")
-    if(webcontainer) return 
-    const webcontainerInstance = await WebContainer.boot();
-    setWebcontainer(webcontainerInstance);
-    console.log("booted!!!")
-   
-  }  
+  const webcontainer=useWebContainer();
+
   function convertToWebContainerFormat(rootNode) {
     const files = {};
   
@@ -138,8 +131,17 @@ export default function GeneratorPage() {
   async function FileHandlerWC() {
     const localwcfs=convertToWebContainerFormat(fileStructure);
     await webcontainer?.mount(localwcfs);
-    setWcfs(localwcfs);
-    console.log("Files mounted.");
+    console.log("Files mounted...");
+    const listProcess = await webcontainer?.spawn('ls', ['.']);
+       listProcess?.output.pipeTo(new WritableStream({
+         write(data) {
+           console.log(data);
+         }
+       }));
+       const listExitCode = await listProcess?.exit;
+       if (listExitCode !== 0) {
+         throw new Error(`npm install failed with exit code ${listExitCode}`);
+       }
   
       console.log("Installing dependencies...");
       const installProcess = await webcontainer?.spawn('npm', ['i']);
@@ -171,21 +173,13 @@ export default function GeneratorPage() {
   }
   
   
-  useEffect(()=>{
-    WebContainerInitializer();
-  },[])
-  
-  
-  
-  
-  
   useEffect(() => {
     let updateHappened = false;
     
     steps.filter(({status}) => status === "pending").forEach(step => {
       updateHappened = true;
       if (step?.type === 'CreateFile' && step.path) {
-        console.log('Processing file:', step.path);
+        
         const root: FileSystemNode = fileStructure || {
           id: 'root',
           name: 'root',
@@ -195,14 +189,14 @@ export default function GeneratorPage() {
         };
 
         let parsedPath = step.path.split("/").filter(Boolean);
-        console.log('Parsed path:', parsedPath);
+        
         let currentNode = root;
         let currentPath = '';
 
         // Create folder structure
         for (let i = 0; i < parsedPath.length - 1; i++) {
           currentPath = currentPath ? `${currentPath}/${parsedPath[i]}` : parsedPath[i];
-          console.log('Creating folder:', currentPath);
+     
           let folder = currentNode.children?.find(
             child => child.type === 'folder' && child.name === parsedPath[i]
           );
@@ -224,7 +218,7 @@ export default function GeneratorPage() {
         // Add the file
         const fileName = parsedPath[parsedPath.length - 1];
         const filePath = currentPath ? `${currentPath}/${fileName}` : fileName;
-        console.log('Adding file:', filePath);
+    
         
         const existingFile = currentNode.children?.find(
           child => child.type === 'file' && child.path === filePath
@@ -331,76 +325,77 @@ export default function GeneratorPage() {
     
   }, [steps]);
  
-  const handleDesignSelect = async (componentPath: string, designPath: string) => {
-    // Get the default file path by replacing the selected design path's filename with 'default'
-    const pathParts = designPath.split('/');
-    const fileName = pathParts[pathParts.length - 1];
-    const fileExt = fileName.includes('.') ? fileName.substring(fileName.lastIndexOf('.')) : '';
-    const defaultPath = designPath.replace(fileName, `default${fileExt}`);
+  // const handleDesignSelect = async (componentPath: string, designPath: string) => {
+  //   // Get the default file path by replacing the selected design path's filename with 'default'
+  //   const pathParts = designPath.split('/');
+  //   const fileName = pathParts[pathParts.length - 1];
+  //   const fileExt = fileName.includes('.') ? fileName.substring(fileName.lastIndexOf('.')) : '';
+  //   const defaultPath = designPath.replace(fileName, `default${fileExt}`);
     
-    try {
-      // This is where we would read the selected design file and update the default file
-      // For now, we're just going to update the fileStructure
+  //   try {
+  //     // This is where we would read the selected design file and update the default file
+  //     // For now, we're just going to update the fileStructure
       
-      // Find the design file in our file structure
-      const root: FileSystemNode = fileStructure || {
-        id: 'root',
-        name: 'root',
-        type: 'folder',
-        path: '/',
-        children: []
-      };
+  //     // Find the design file in our file structure
+  //     const root: FileSystemNode = fileStructure || {
+  //       id: 'root',
+  //       name: 'root',
+  //       type: 'folder',
+  //       path: '/',
+  //       children: []
+  //     };
       
-      // Helper function to find a file node by path
-      const findFileNode = (node: FileSystemNode, path: string): FileSystemNode | null => {
-        if (node.path === path && node.type === 'file') {
-          return node;
-        }
-        if (node.type === 'folder' && node.children) {
-          for (const child of node.children) {
-            const found = findFileNode(child, path);
-            if (found) return found;
-          }
-        }
-        return null;
-      };
+  //     // Helper function to find a file node by path
+  //     const findFileNode = (node: FileSystemNode, path: string): FileSystemNode | null => {
+  //       if (node.path === path && node.type === 'file') {
+  //         return node;
+  //       }
+  //       if (node.type === 'folder' && node.children) {
+  //         for (const child of node.children) {
+  //           const found = findFileNode(child, path);
+  //           if (found) return found;
+  //         }
+  //       }
+  //       return null;
+  //     };
       
-      const designFileNode = findFileNode(root, designPath);
-      const defaultFileNode = findFileNode(root, defaultPath);
+  //     const designFileNode = findFileNode(root, designPath);
+  //     const defaultFileNode = findFileNode(root, defaultPath);
       
-      if (designFileNode && defaultFileNode) {
-        // Update the default file with the content from the design file
-        defaultFileNode.content = designFileNode.content;
-        setFileStructure({...root});
+  //     if (designFileNode && defaultFileNode) {
+  //       // Update the default file with the content from the design file
+  //       defaultFileNode.content = designFileNode.content;
+  //       setFileStructure({...root});
         
-        // Open the default file in the editor
-        setSelectedFile(defaultPath);
-      }
-    } catch (error) {
-      console.error('Failed to update design:', error);
-    }
-  };
+  //       // Open the default file in the editor
+  //       setSelectedFile(defaultPath);
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to update design:', error);
+  //   }
+  // };
 
-  useEffect(() => {
-    // Extract design components from steps
-    const designsStep = steps.find(step => step.type === 'Designs');
-    if (designsStep && designsStep.components) {
-      setDesignComponents(designsStep.components);
-    }
-  }, [steps]);
+  // useEffect(() => {
+  //   // Extract design components from steps
+  //   const designsStep = steps.find(step => step.type === 'Designs');
+  //   if (designsStep && designsStep.components) {
+  //     setDesignComponents(designsStep.components);
+  //   }
+  // }, [steps]);
+
+  // useEffect(()=>{
+  //   async function init() {
+  //     const updatedWcfs=convertToWebContainerFormat(fileStructure);
+  //     setWcfs(updatedWcfs);
+  //     await webcontainer?.mount(updatedWcfs);
+  //   }
+  //   init();
+  // },[fileStructure])
 
   useEffect(()=>{
-    async function init() {
-      const updatedWcfs=convertToWebContainerFormat(fileStructure);
-      setWcfs(updatedWcfs);
-      await webcontainer?.mount(updatedWcfs);
-    }
-    init();
-  },[fileStructure])
-
-  useEffect(()=>{
+    if(webcontainer)
     FileHandlerWC();
-  },[webcontainer])
+  },[fileStructure,webcontainer])
 
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">
@@ -455,11 +450,11 @@ export default function GeneratorPage() {
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <DesignSelector 
-                      components={designComponents} 
-                      onSelectDesign={handleDesignSelect} 
-                    />
+                  ) : (<p>HELLO</p>
+                    // <DesignSelector 
+                    //   components={designComponents} 
+                    //   onSelectDesign={handleDesignSelect} 
+                    // />
                   )}
                 </div>
 

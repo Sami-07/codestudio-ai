@@ -1,5 +1,7 @@
 // https://nextjs.org/docs/api-reference/next.config.js/introduction
 module.exports = {
+
+  
   async headers() {
     return [
       {

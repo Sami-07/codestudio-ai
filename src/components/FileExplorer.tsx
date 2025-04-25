@@ -25,19 +25,19 @@ const FileNode: React.FC<FileNodeProps> = ({
   const handleSelect = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Node clicked:', node);
+    
     
     if (node.type === 'file') {
-      console.log('Selecting file:', node.path);
+
       onSelect(node.path);
     } else if (node.type === 'folder') {
-      console.log('Toggling folder:', node.path, 'Current state:', isExpanded);
+   
       setIsExpanded(!isExpanded);
     }
   };
 
   const isSelected = selectedPath === node.path;
-  console.log('Rendering node:', node.name, 'Type:', node.type, 'Expanded:', isExpanded);
+
 
   return (
     <div className="select-none" style={{ paddingLeft: `${level * 16}px` }}>
@@ -94,7 +94,7 @@ const FileExplorer: React.FC = () => {
   const [selectedFile, setSelectedFile] = useAtom(selectedFileAtom);
 
   const handleSelect = useCallback((path: string) => {
-    console.log('Selecting file:', path);
+   
     setSelectedFile(path);
   }, [setSelectedFile]);
 
@@ -114,7 +114,7 @@ const FileExplorer: React.FC = () => {
       {fileStructure.children && fileStructure.children.length > 0 ? (
         <div className="p-2">
           {fileStructure.children.map((node) => {
-            console.log('Rendering node:', node);
+       
             return (
               <FileNode
                 key={node.id}
