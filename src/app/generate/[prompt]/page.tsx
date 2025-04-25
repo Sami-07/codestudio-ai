@@ -87,6 +87,8 @@ export default function GeneratorPage() {
   const [viewMode, setViewMode] = useState<'steps' | 'designs'>('steps');
   const [designComponents, setDesignComponents] = useState<ComponentDesign[]>([]);
   const [url, setUrl]=useState("");
+  const [deploying, setDeploying] = useState(false);
+  const [deployUrl, setDeployUrl] = useState<string | null>(null);
   const webcontainer=useWebContainer();
 
   function convertToWebContainerFormat(rootNode: FileSystemNode | null): FileSystemTree {
@@ -480,6 +482,35 @@ export default function GeneratorPage() {
   //   FileHandlerWC();
   // },[fileStructure,webcontainer])
 
+  const handleDeploy = async () => {
+    if (!fileStructure) return;
+    
+    try {
+      setDeploying(true);
+      
+      const response = await fetch('/api/ai/build-deploy', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          fileStructure: fileStructure
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Deployment failed');
+      }
+      
+      const data = await response.json();
+      setDeployUrl(data.url);
+    } catch (error) {
+      console.error('Deployment error:', error);
+    } finally {
+      setDeploying(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col">
       <header className="bg-gray-800 border-b border-gray-700 px-6 py-4">
@@ -635,7 +666,40 @@ export default function GeneratorPage() {
               >
                 Preview
               </button>
+              <button
+                onClick={handleDeploy}
+                disabled={deploying || !fileStructure}
+                className={`px-4 py-2 rounded ml-auto ${
+                  deploying
+                    ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700 text-white'
+                }`}
+              >
+                {deploying ? (
+                  <span className="flex items-center">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    Deploying...
+                  </span>
+                ) : (
+                  'Deploy'
+                )}
+              </button>
             </div>
+            
+            {deployUrl && (
+              <div className="mb-4 p-3 bg-green-500/20 text-green-300 rounded-md flex items-center justify-between">
+                <span>Deployed successfully!</span>
+                <a 
+                  href={deployUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-white bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-sm"
+                >
+                  Visit Site
+                </a>
+              </div>
+            )}
+            
             <div className="h-[calc(100%-4rem)]">
               {activeTab === 'code' ? (
                 selectedFile ? (
