@@ -8,7 +8,10 @@ CodeStudio AI is an innovative platform that allows users to create and deploy w
 
 ### Demo Video
 
-![Demo Video](https://github.com/user-attachments/assets/ce19a498-593b-4ed9-a617-6f250d5ee690)
+
+
+https://github.com/user-attachments/assets/17818a3f-f214-4f73-81d4-a682ac678fcb
+
 
 ## Features
 
