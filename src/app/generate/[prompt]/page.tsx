@@ -92,6 +92,8 @@ export default function GeneratorPage() {
   const [url, setUrl]=useState("");
   const [deploying, setDeploying] = useState(false);
   const [deployUrl, setDeployUrl] = useState<string | null>(null);
+  const [deployError, setDeployError] = useState<string | null>(null);
+  const [deployMessage, setDeployMessage] = useState<string | null>(null);
   const webcontainer=useWebContainer();
 
   function convertToWebContainerFormat(rootNode: FileSystemNode | null): FileSystemTree {
@@ -490,8 +492,10 @@ export default function GeneratorPage() {
     
     try {
       setDeploying(true);
+      setDeployError(null);
+      setDeployMessage(null);
       
-      const response = await fetch('/api/ai/build-deploy', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -501,26 +505,34 @@ export default function GeneratorPage() {
         }),
       });
       
+      const data = await response.json();
+      
       if (!response.ok) {
-        throw new Error('Deployment failed');
+        throw new Error(data.message || 'Deployment failed');
       }
       
-      const data = await response.json();
-      setDeployUrl(data.url);
+      if (!data.success) {
+        setDeployError(data.message || 'Deployment failed');
+        return;
+      }
+      
+      setDeployUrl(data.deployedLink);
+      setDeployMessage(data.message || 'Deployment successful!');
     } catch (error) {
       console.error('Deployment error:', error);
+      setDeployError(error instanceof Error ? error.message : 'Deployment failed');
     } finally {
       setDeploying(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex flex-col">
+    <div className="max-h-screen bg-gray-950 flex flex-col">
       <header className="bg-gray-900 border-b border-gray-800 px-6 py-4 sticky top-0 z-10 shadow-md">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Code Generator</h1>
-            <p className="text-sm text-gray-400 mt-1 max-w-2xl truncate">{prompt}</p>
+            <h1 className="text-xl font-bold text-white tracking-tight">Code Studio AI - {prompt.slice(0, 100)} {prompt.length > 100 ? '...' : ''}</h1>
+          
           </div>
           {deployUrl && (
             <a 
@@ -537,7 +549,7 @@ export default function GeneratorPage() {
       </header>
       
       <div className="flex-1 overflow-hidden">
-        <div className="h-[calc(100vh-5rem)] grid grid-cols-4 gap-4 p-4">
+        <div className="h-[calc(100vh-2rem)] grid grid-cols-5 gap-4 p-4">
           <div className={`col-span-1 space-y-4 overflow-y-auto ${scrollbarHideClass}`}>
             {(loading && !templateSet) || (loading && steps.length === 0) ? (
               <div className="flex items-center justify-center h-full">
@@ -572,19 +584,16 @@ export default function GeneratorPage() {
                               : 'bg-gray-800 border-gray-700 text-gray-300'
                           } transition-all hover:translate-y-[-1px]`}
                         >
-                          <div className="font-medium flex items-center gap-2">
+                          <div className="font-medium flex items-center gap-2 text-sm ">
                             {step.status === 'completed' && (
                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
                             )}
-                            {step.type === 'CreateFile' ? 'Create File' : 
-                             step.type === 'UpdateFile' ? 'Update File' : 
-                             step.type === 'Designs' ? 'Component Designs' : 'Run Command'}
+                            {step.type === 'CreateFile' && `Create ${step.path}`}
+                            {step.type === 'UpdateFile' && `Update ${step.path}`}
+                        
+                            {step.type === 'Shell' && `Run Command: ${step.command}`}
                           </div>
-                          <div className="text-sm opacity-80 mt-1">
-                            {step.type === 'CreateFile' || step.type === 'UpdateFile' ? step.path : 
-                             step.type === 'Shell' ? step.command :
-                             step.type === 'Designs' ? `${step.components?.length || 0} components` : ''}
-                          </div>
+                         
                         </div>
                       ))}
                     </div>
@@ -596,80 +605,6 @@ export default function GeneratorPage() {
                   )}
                 </div>
 
-                <div className="bg-gray-900 rounded-lg p-4 border border-gray-800 shadow-lg">
-                  <h2 className="text-lg font-bold text-white mb-3">Chat</h2>
-                  <textarea
-                    value={userPrompt}
-                    onChange={(e) => setUserPrompt(e.target.value)}
-                    className="w-full bg-gray-800 text-gray-100 rounded-md p-3 mb-3 border border-gray-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all"
-                    placeholder="Enter your message..."
-                    rows={4}
-                  />
-                  <button
-                    onClick={async () => {
-                      try {
-                        setLoading(true);
-                        const response = await fetch('/api/ai', {
-                          method: 'POST',
-                          headers: {
-                            'Content-Type': 'application/json',
-                          },
-                          body: JSON.stringify({
-                            messages: [
-                              ...llmMessages,
-                              { role: "user", content: userPrompt }
-                            ]
-                          
-
-                            //asdf
-                          })
-                        });
-
-                        if (!response.ok) {
-                          throw new Error('Failed to send message');
-                        }
-
-                        const { response: aiResponse } = await response.json();
-                        
-                        setLlmMessages(messages => [
-                          ...messages,
-                          { role: "user", content: userPrompt },
-                          { role: "assistant", content: aiResponse }
-                        ]);
-
-                        setSteps(s => [
-                          ...s,
-                          ...parseXml(aiResponse).map(x => ({
-                            ...x,
-                            status: "pending" as const
-                          }))
-                        ]);
-
-                        setUserPrompt('');
-
-                        
-                      } catch (error) {
-                        console.error('Failed to send message:', error);
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-md transition-colors font-medium flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
-                    disabled={loading || !userPrompt.trim()}
-                  >
-                    {loading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                        Send
-                      </>
-                    )}
-                  </button>
-                </div>
               </>
             )}
           </div>
@@ -688,7 +623,7 @@ export default function GeneratorPage() {
             </div>
           </div>
 
-          <div className="col-span-2 bg-gray-900 rounded-lg border border-gray-800 shadow-lg overflow-hidden">
+          <div className="col-span-3 bg-gray-900 rounded-lg border border-gray-800 shadow-lg overflow-hidden">
             <div className="flex items-center p-3 border-b border-gray-800 bg-gray-900">
               <div className="flex space-x-2">
                 <button
@@ -745,17 +680,26 @@ export default function GeneratorPage() {
             {deployUrl && (
               <div className="mx-3 my-2 p-3 bg-green-950 border border-green-700 text-green-300 rounded-md flex items-center justify-between shadow-inner">
                 <span className="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500"><polyline points="20 6 9 17 4 12"></polyline></svg>
-                  Deployed successfully!
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500 text-sm"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                  {deployMessage || 'Deployed successfully!'}
                 </span>
                 <a 
                   href={deployUrl} 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="text-white bg-green-700 hover:bg-green-800 px-3 py-1 rounded-md text-sm transition-colors"
+                  className="text-white bg-green-700 hover:bg-green-800 px-3 py-2 rounded-md text-sm transition-colors w-24 text-center"
                 >
                   Visit Site
                 </a>
+              </div>
+            )}
+            
+            {deployError && (
+              <div className="mx-3 my-2 p-3 bg-red-950 border border-red-700 text-red-300 rounded-md flex items-center justify-between shadow-inner">
+                <span className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                  {deployError}
+                </span>
               </div>
             )}
             
@@ -793,6 +737,72 @@ export default function GeneratorPage() {
             </div>
           </div>
 
+        </div>
+      </div>
+
+      {/* Fixed textarea at bottom center */}
+      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 w-full max-w-2xl px-4 z-50">
+        <div className="relative">
+          <textarea
+            value={userPrompt}
+            onChange={(e) => setUserPrompt(e.target.value)}
+            className="w-full bg-gray-800 text-gray-100 rounded-lg p-4 pr-24 border border-gray-700 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all resize-none shadow-lg "
+            placeholder="Request a change to the code..."
+            rows={1}
+          />
+          <button
+            onClick={async () => {
+              try {
+                setLoading(true);
+                const response = await fetch('/api/ai', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    messages: [
+                      ...llmMessages,
+                      { role: "user", content: userPrompt }
+                    ]
+                  })
+                });
+
+                if (!response.ok) {
+                  throw new Error('Failed to send message');
+                }
+
+                const { response: aiResponse } = await response.json();
+                
+                setLlmMessages(messages => [
+                  ...messages,
+                  { role: "user", content: userPrompt },
+                  { role: "assistant", content: aiResponse }
+                ]);
+
+                setSteps(s => [
+                  ...s,
+                  ...parseXml(aiResponse).map(x => ({
+                    ...x,
+                    status: "pending" as const
+                  }))
+                ]);
+
+                setUserPrompt('');
+              } catch (error) {
+                console.error('Failed to send message:', error);
+              } finally {
+                setLoading(false);
+              }
+            }}
+            className="absolute right-2 bottom-4 bg-indigo-600 hover:bg-indigo-700 text-white p-1 rounded-md transition-colors font-medium flex items-center justify-center gap-1 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed w-10 h-10"
+            disabled={loading || !userPrompt.trim()}
+          >
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+            )}
+          </button>
         </div>
       </div>
 

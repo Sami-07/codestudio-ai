@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from 'react';
 import { useAtom } from 'jotai';
 import Editor from '@monaco-editor/react';
-import { selectedFileAtom, selectedFileContentAtom, fileStructureAtom, FileSystemNode } from '@/store/atoms';
-
+import { selectedFileAtom, selectedFileContentAtom, fileStructureAtom } from '@/store/atoms';
+import { FileSystemNode } from '@/types';
 // Helper function to determine the language based on file extension
 const getLanguageFromPath = (path: string | null): string => {
   if (!path) return 'plaintext';
@@ -79,7 +79,7 @@ const updateNodeContent = (
   if (node.type === 'folder' && node.children) {
     return {
       ...node,
-      children: node.children.map(child => updateNodeContent(child, targetPath, newContent))
+      children: node.children.map((child: any) => updateNodeContent(child, targetPath, newContent))
     };
   }
 
@@ -131,8 +131,8 @@ const CodeEditor: React.FC = () => {
   return (
     <div className="h-full flex flex-col">
       <div className="border-b border-gray-200 p-2 flex items-center">
-        <span className="font-medium truncate">{fileName}</span>
-        <span className="ml-2 text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+        <span className="font-medium truncate text-blue-600 text-sm">{fileName}</span>
+        <span className="ml-2 text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">
           {language}
         </span>
       </div>

@@ -125,7 +125,7 @@ export default function Home() {
             transition={{ delay: 0.4, duration: 0.5 }}
             className="text-gray-300 mb-10 max-w-md mx-auto text-lg"
           >
-            Describe the application or component you want to build, and let our AI do the rest.
+            Build your websites with AI and deploy it with a single click to custom domain.
           </motion.p>
         </motion.div>
 
@@ -141,18 +141,18 @@ export default function Home() {
           
           {/* Card content */}
           <div className="p-8">
-            <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4 w-full">
               <motion.div 
                 whileTap={{ scale: 0.995 }}
-                className="flex-grow relative"
+                className="w-full"
               >
-                <input
-                  type="text"
+                <textarea
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
-                  placeholder="e.g., 'a simple counter component' or 'a login form'"
-                  className="w-full px-5 py-4 bg-gray-900/90 border border-gray-700/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-100 placeholder-gray-400 shadow-inner text-lg transition-all duration-200"
+                  placeholder="e.g., 'a portfolio website for a software engineer' or 'a landing page for my coffee shop'"
+                  className="w-full px-5 py-4 bg-gray-900/90 border border-gray-700/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-100 placeholder-gray-400 shadow-inner text-lg transition-all duration-200 resize-none"
                   required
+                  rows={4}
                 />
                 {/* Input highlight effect */}
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-indigo-500/10 to-transparent opacity-0 hover:opacity-100 rounded-xl pointer-events-none transition-opacity duration-1000"></div>
@@ -162,7 +162,7 @@ export default function Home() {
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
                 type="submit"
-                className="group bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium px-8 py-4 rounded-xl shadow-lg transition-all duration-200 text-lg flex items-center justify-center gap-3 disabled:opacity-50 relative overflow-hidden"
+                className="w-full group bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-medium px-8 py-3 rounded-xl shadow-lg transition-all duration-200 text-base flex items-center justify-center gap-3 disabled:opacity-50 relative overflow-hidden"
                 disabled={!prompt.trim()}
               >
                 {/* Button shine effect */}
@@ -214,12 +214,35 @@ export default function Home() {
       <footer className="relative mt-10 text-center text-gray-500 text-sm pb-8">
         <div className="flex flex-col items-center">
           <p className="mb-2">
-            Powered by <span className="font-semibold text-indigo-400">studio AI</span>
+            Powered by <span className="font-semibold text-indigo-400">Code Studio AI</span>
           </p>
-          <div className="flex gap-4 justify-center">
-            <a href="#" className="text-gray-400 hover:text-indigo-400 transition-colors duration-200">About</a>
-            <a href="#" className="text-gray-400 hover:text-indigo-400 transition-colors duration-200">Documentation</a>
-            <a href="#" className="text-gray-400 hover:text-indigo-400 transition-colors duration-200">GitHub</a>
+          <div className="text-sm text-gray-500 space-y-1">
+            <p className="text-gray-400 font-medium">Contributors of Code Studio AI</p>
+            <div className="flex items-center justify-center gap-3">
+              <a 
+                href="https://github.com/Sami-07" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center gap-1.5 text-gray-400 hover:text-indigo-400 transition-colors duration-200"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                </svg>
+                Shaikh Abdul Sami
+              </a>
+              <span className="text-gray-600">•</span>
+              <a 
+                href="https://github.com/AdityaSaxena17" 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="flex items-center gap-1.5 text-gray-400 hover:text-indigo-400 transition-colors duration-200"
+              >
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clipRule="evenodd" />
+                </svg>
+                Aditya Saxena
+              </a>
+            </div>
           </div>
         </div>
       </footer>
