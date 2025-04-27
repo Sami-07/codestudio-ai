@@ -244,8 +244,8 @@ export default function Home() {
                 </Link>
               </motion.div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
-                <Link href="#features" className="flex items-center px-8 py-3 rounded-full bg-slate-800 border border-slate-700 font-medium hover:bg-slate-700 transition-all duration-300">
-                  <span>Learn More</span>
+                <Link href="/create" className="flex items-center px-8 py-3 rounded-full bg-slate-800 border border-slate-700 font-medium hover:bg-slate-700 transition-all duration-300">
+                  <span>Get Started</span>
                   <motion.div whileHover="hover" variants={iconAnimation} className="inline-block">
                     <ArrowRight size={16} className="ml-2" />
                   </motion.div>
