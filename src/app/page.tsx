@@ -739,15 +739,9 @@ export default function Home() {
               <span className="text-xl font-bold">CodeStudio AI</span>
             </div>
             <div className="flex space-x-6">
-              <Link href="/about" className="text-slate-300 hover:text-white transition-colors flex items-center">
-                <Info size={14} className="mr-1" />
-                <span>About</span>
-              </Link>
-              <Link href="/docs" className="text-slate-300 hover:text-white transition-colors flex items-center">
-                <FileText size={14} className="mr-1" />
-                <span>Documentation</span>
-              </Link>
-              <Link href="/github" className="text-slate-300 hover:text-white transition-colors flex items-center">
+           
+             
+              <Link href="https://github.com/Sami-07/codestudio-ai" target="_blank" className="text-slate-300 hover:text-white transition-colors flex items-center">
                 <Github size={14} className="mr-1" />
                 <span>GitHub</span>
               </Link>
