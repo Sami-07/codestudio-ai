@@ -1,4 +1,4 @@
-# CodeStudio AI - AI-Powered Website Builder
+# CodeStudio AI - AI-Powered Website Builder with 1-Click deployment
 
 CodeStudio AI is an innovative platform that allows users to create and deploy websites using natural language prompts. The platform leverages AI to generate complete, production-ready websites based on user requirements.
 
