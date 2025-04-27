@@ -11,25 +11,25 @@ import DesignSelector from '@/components/DesignSelector';
 import { Loader2 } from 'lucide-react';
 import { WebContainer, FileSystemTree } from '@webcontainer/api';
 import { useWebContainer } from '@/hooks/useWebContainer';
-
+import { ToastContainer, toast } from 'react-toastify';
 // Add scrollbar-hide utility class
 const scrollbarHideClass = "[&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]";
 
 // Helper function to parse XML into steps
 function parseXml(xml: string): Step[] {
   const steps: Step[] = [];
-  
+
   // First, try to match each studioAction tag
   const actionRegex = /<studioAction\s+([^>]*)>([\s\S]*?)<\/studioAction>/g;
   let actionMatch;
 
   while ((actionMatch = actionRegex.exec(xml)) !== null) {
     const [_, attributes, content] = actionMatch;
-    
+
     // Then parse the attributes
     const typeMatch = attributes.match(/type="([^"]*)"/);
     const filePathMatch = attributes.match(/filePath="([^"]*)"/);
-    
+
     const type = typeMatch ? typeMatch[1] : null;
     const filePath = filePathMatch ? filePathMatch[1] : null;
 
@@ -78,7 +78,7 @@ function parseXml(xml: string): Step[] {
 export default function GeneratorPage() {
   const params = useParams();
   const prompt = params.prompt ? decodeURIComponent(params.prompt as string) : '';
-  
+
   const [userPrompt, setUserPrompt] = useState("");
   const [llmMessages, setLlmMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
@@ -89,16 +89,16 @@ export default function GeneratorPage() {
   const [activeTab, setActiveTab] = useState<'code' | 'preview'>('code');
   const [viewMode, setViewMode] = useState<'steps' | 'designs'>('steps');
   const [designComponents, setDesignComponents] = useState<ComponentDesign[]>([]);
-  const [url, setUrl]=useState("");
+  const [url, setUrl] = useState("");
   const [deploying, setDeploying] = useState(false);
   const [deployUrl, setDeployUrl] = useState<string | null>(null);
   const [deployError, setDeployError] = useState<string | null>(null);
   const [deployMessage, setDeployMessage] = useState<string | null>(null);
-  const webcontainer=useWebContainer();
+  const webcontainer = useWebContainer();
 
   function convertToWebContainerFormat(rootNode: FileSystemNode | null): FileSystemTree {
     const files: FileSystemTree = {};
-  
+
     // Helper function to recursively process nodes
     function processNode(node: FileSystemNode): FileSystemTree[string] | null {
       // For a file node from the input
@@ -120,12 +120,12 @@ export default function GeneratorPage() {
             // Recursively process each child and add it to the directoryContents
             // using the child's name as the key.
             const processedChild = processNode(child);
-            if(processedChild) {
+            if (processedChild) {
               directoryContents[child.name] = processedChild;
             }
           }
         }
-       
+
         // Return the structure { directory: { ...contents... } }
         return {
           directory: directoryContents
@@ -134,7 +134,7 @@ export default function GeneratorPage() {
       // Handle potential unexpected node types if necessary
       return null;
     }
-  
+
     // Start processing from the children of the root node
     // The root node itself (e.g., "todo-app") is usually not represented
     // as a top-level key in the WebContainer format, only its contents are.
@@ -143,19 +143,19 @@ export default function GeneratorPage() {
         // The name of the child node becomes the key in the final 'files' object
         const processedChild = processNode(child);
         if (processedChild) {
-            files[child.name] = processedChild;
+          files[child.name] = processedChild;
         }
       }
     }
-  
+
     return files;
   }
-  
+
   async function FileHandlerWC() {
     if (!webcontainer) return;
     console.log("Preparing WebContainer files...");
-    const localwcfs=convertToWebContainerFormat(fileStructure);
-    
+    const localwcfs = convertToWebContainerFormat(fileStructure);
+
     // Check if the file structure is empty before mounting
     if (Object.keys(localwcfs).length === 0) {
       console.log("File structure is empty, skipping mount.");
@@ -178,40 +178,40 @@ export default function GeneratorPage() {
       // if (listExitCode !== 0) {
       //   console.error(`ls command failed with exit code ${listExitCode}`);
       // }
-  
+
       console.log("Installing dependencies...");
       const installProcess = await webcontainer.spawn('npm', ['install']); // Changed from 'i' to 'install' for clarity
-  
+
       installProcess?.output.pipeTo(new WritableStream({
         write(data) {
           console.log('npm install:', data);
         }
       }));
-       // Wait for the installation process to complete
-       const installExitCode = await installProcess?.exit;
-       if (installExitCode !== 0) {
-         throw new Error(`npm install failed with exit code ${installExitCode}`);
-       }
-       console.log("Dependencies installed successfully.");
-   
-       console.log("Starting development server...");
-       const devProcess = await webcontainer.spawn('npm', ['run', 'dev']);
-   
-       devProcess?.output.pipeTo(new WritableStream({
-         write(data) {
-           console.log('npm run dev:', data);
-         }
-       }));
-   
-       webcontainer.on('server-ready', (port, url) => {
-         console.log(`Server is ready on port ${port} at ${url}`);
-         setUrl(url);
-       });
+      // Wait for the installation process to complete
+      const installExitCode = await installProcess?.exit;
+      if (installExitCode !== 0) {
+        throw new Error(`npm install failed with exit code ${installExitCode}`);
+      }
+      console.log("Dependencies installed successfully.");
 
-       webcontainer.on('error', (error) => {
+      console.log("Starting development server...");
+      const devProcess = await webcontainer.spawn('npm', ['run', 'dev']);
+
+      devProcess?.output.pipeTo(new WritableStream({
+        write(data) {
+          console.log('npm run dev:', data);
+        }
+      }));
+
+      webcontainer.on('server-ready', (port, url) => {
+        console.log(`Server is ready on port ${port} at ${url}`);
+        setUrl(url);
+      });
+
+      webcontainer.on('error', (error) => {
         console.error("WebContainer error:", error);
         // Potentially update UI state to show error
-       });
+      });
 
       // Handle process exit for dev server (optional, good practice)
       devProcess.exit.then((code) => {
@@ -228,13 +228,13 @@ export default function GeneratorPage() {
       // Handle errors, maybe set an error state in UI
     }
   }
-  
-  
+
+
   useEffect(() => {
     let updateHappened = false;
-    
+
     const pendingSteps = steps.filter(({ status }) => status === "pending");
-    
+
     if (pendingSteps.length > 0) {
       let root: FileSystemNode = fileStructure || {
         id: 'root',
@@ -255,11 +255,11 @@ export default function GeneratorPage() {
             // Create folder structure
             for (let i = 0; i < parsedPath.length - 1; i++) {
               currentPath = currentPath ? `${currentPath}/${parsedPath[i]}` : parsedPath[i];
-        
+
               let folder = currentNode.children?.find(
                 child => child.type === 'folder' && child.name === parsedPath[i]
               );
-    
+
               if (!folder) {
                 folder = {
                   id: `folder-${currentPath}`,
@@ -272,14 +272,14 @@ export default function GeneratorPage() {
                 currentNode.children.push(folder);
                 structureChanged = true;
               }
-              
+
               currentNode = folder;
             }
 
             // Add or update the file
             const fileName = parsedPath[parsedPath.length - 1];
             const filePath = currentPath ? `${currentPath}/${fileName}` : fileName;
-        
+
             const fileIndex = currentNode.children?.findIndex(
               child => child.type === 'file' && child.name === fileName // Match by name within the current node
             );
@@ -307,15 +307,15 @@ export default function GeneratorPage() {
             }
           }
         } else if (step?.type === 'Designs') {
-            // Handle Designs step - currently just logging, could update state
-            console.log("Processing Designs step:", step.components);
-            if (step.components) {
-              setDesignComponents(step.components);
-            }
+          // Handle Designs step - currently just logging, could update state
+          console.log("Processing Designs step:", step.components);
+          if (step.components) {
+            setDesignComponents(step.components);
+          }
         } else if (step?.type === 'Shell') {
-            // Handle Shell step - currently just logging
-            // Actual execution should happen within WebContainer, perhaps triggered differently
-            console.log("Processing Shell step:", step.command);
+          // Handle Shell step - currently just logging
+          // Actual execution should happen within WebContainer, perhaps triggered differently
+          console.log("Processing Shell step:", step.command);
         }
       });
 
@@ -326,11 +326,11 @@ export default function GeneratorPage() {
       }
 
       // Mark processed steps as completed
-      setSteps(currentSteps => currentSteps.map(s => 
+      setSteps(currentSteps => currentSteps.map(s =>
         pendingSteps.includes(s) ? { ...s, status: "completed" as const } : s
       ));
     }
-   
+
   }, [steps, fileStructure, setFileStructure]);
 
   async function init() {
@@ -347,7 +347,7 @@ export default function GeneratorPage() {
       if (!templateResponse.ok) {
         throw new Error('Failed to determine project type');
       }
-      
+
       const { prompts, uiPrompts, projectType } = await templateResponse.json();
 
       setTemplateSet(true);
@@ -368,7 +368,7 @@ export default function GeneratorPage() {
             role: "user",
             content
           }))
-        
+
         })
       });
 
@@ -377,7 +377,7 @@ export default function GeneratorPage() {
       }
 
       const { response } = await chatResponse.json();
-      
+
       const followupSteps = parseXml(response).map(x => ({
         ...x,
         status: "pending" as const
@@ -418,24 +418,24 @@ export default function GeneratorPage() {
       console.log("Triggering FileHandlerWC...");
       FileHandlerWC();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, webcontainer, fileStructure]); // Rerun when loading finishes, webcontainer is ready, or fileStructure is set
 
   useEffect(() => {
     console.log("Current steps:", steps);
   }, [steps]);
- 
+
   // const handleDesignSelect = async (componentPath: string, designPath: string) => {
   //   // Get the default file path by replacing the selected design path's filename with 'default'
   //   const pathParts = designPath.split('/');
   //   const fileName = pathParts[pathParts.length - 1];
   //   const fileExt = fileName.includes('.') ? fileName.substring(fileName.lastIndexOf('.')) : '';
   //   const defaultPath = designPath.replace(fileName, `default${fileExt}`);
-    
+
   //   try {
   //     // This is where we would read the selected design file and update the default file
   //     // For now, we're just going to update the fileStructure
-      
+
   //     // Find the design file in our file structure
   //     const root: FileSystemNode = fileStructure || {
   //       id: 'root',
@@ -444,7 +444,7 @@ export default function GeneratorPage() {
   //       path: '/',
   //       children: []
   //     };
-      
+
   //     // Helper function to find a file node by path
   //     const findFileNode = (node: FileSystemNode, path: string): FileSystemNode | null => {
   //       if (node.path === path && node.type === 'file') {
@@ -458,15 +458,15 @@ export default function GeneratorPage() {
   //       }
   //       return null;
   //     };
-      
+
   //     const designFileNode = findFileNode(root, designPath);
   //     const defaultFileNode = findFileNode(root, defaultPath);
-      
+
   //     if (designFileNode && defaultFileNode) {
   //       // Update the default file with the content from the design file
   //       defaultFileNode.content = designFileNode.content;
   //       setFileStructure({...root});
-        
+
   //       // Open the default file in the editor
   //       setSelectedFile(defaultPath);
   //     }
@@ -476,11 +476,11 @@ export default function GeneratorPage() {
   // };
 
   // useEffect(() => {
-    // Extract design components from steps
-    // const designsStep = steps.find(step => step.type === 'Designs');
-    // if (designsStep && designsStep.components) {
-    //   setDesignComponents(designsStep.components);
-    // }
+  // Extract design components from steps
+  // const designsStep = steps.find(step => step.type === 'Designs');
+  // if (designsStep && designsStep.components) {
+  //   setDesignComponents(designsStep.components);
+  // }
   // }, [steps]);
 
   // Removed useEffect that called FileHandlerWC on fileStructure changes directly
@@ -491,13 +491,26 @@ export default function GeneratorPage() {
 
   const handleDeploy = async () => {
     if (!fileStructure) return;
-    
+    const notify = () => toast.info('To save cost, the deployment is disabled. Please view the demo video on the home page to see the deplyment feature in action.', {
+      position: "top-center",
+      autoClose: 5000,
+      hideProgressBar: false,
+      closeOnClick: false,
+      pauseOnHover: true,
+      draggable: true,
+      progress: undefined,
+      theme: "dark",
+
+    });
+
+    notify();
+    return;
     try {
       setDeploying(true);
       setDeployError(null);
       setDeployMessage(null);
-      
-      const response = await fetch('/api/temp-build', {
+
+      const response = await fetch('/api/upload', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -506,18 +519,18 @@ export default function GeneratorPage() {
           fileStructure: fileStructure
         }),
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.message || 'Deployment failed');
       }
-      
+
       if (!data.success) {
         setDeployError(data.message || 'Deployment failed');
         return;
       }
-      
+
       setDeployUrl(data.deployedLink);
       setDeployMessage(data.message || 'Deployment successful!');
     } catch (error) {
@@ -530,16 +543,29 @@ export default function GeneratorPage() {
 
   return (
     <div className="max-h-screen bg-gray-950 flex flex-col">
+      <ToastContainer
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick={false}
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+
+      />
       <header className="bg-gray-900 border-b border-gray-800 px-6 py-4 sticky top-0 z-10 shadow-md">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-white tracking-tight">Code Studio AI - {prompt.slice(0, 100)} {prompt.length > 100 ? '...' : ''}</h1>
-          
+
           </div>
           {deployUrl && (
-            <a 
-              href={deployUrl} 
-              target="_blank" 
+            <a
+              href={deployUrl}
+              target="_blank"
               rel="noopener noreferrer"
               className="text-white bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-lg flex items-center gap-2"
             >
@@ -549,7 +575,7 @@ export default function GeneratorPage() {
           )}
         </div>
       </header>
-      
+
       <div className="flex-1 overflow-hidden">
         <div className="h-[calc(100vh-2rem)] grid grid-cols-5 gap-4 p-4">
           <div className={`col-span-1 space-y-4 overflow-y-auto ${scrollbarHideClass}`}>
@@ -574,17 +600,16 @@ export default function GeneratorPage() {
                       Switch to {viewMode === 'steps' ? 'Designs' : 'Steps'}
                     </button> */}
                   </div>
-                  
+
                   {viewMode === 'steps' ? (
                     <div className="space-y-2">
                       {steps.map((step, index) => (
                         <div
                           key={index}
-                          className={`p-3 rounded-md border ${
-                            step.status === 'completed'
+                          className={`p-3 rounded-md border ${step.status === 'completed'
                               ? 'bg-green-950/50 border-green-800 text-green-400'
                               : 'bg-gray-800 border-gray-700 text-gray-300'
-                          } transition-all hover:translate-y-[-1px]`}
+                            } transition-all hover:translate-y-[-1px]`}
                         >
                           <div className="font-medium flex items-center gap-2 text-sm ">
                             {step.status === 'completed' && (
@@ -592,10 +617,10 @@ export default function GeneratorPage() {
                             )}
                             {step.type === 'CreateFile' && `Create ${step.path}`}
                             {step.type === 'UpdateFile' && `Update ${step.path}`}
-                        
+
                             {step.type === 'Shell' && `Run Command: ${step.command}`}
                           </div>
-                         
+
                         </div>
                       ))}
                     </div>
@@ -610,7 +635,7 @@ export default function GeneratorPage() {
               </>
             )}
           </div>
-          
+
           <div className={`col-span-1 bg-gray-900 rounded-lg p-4 border border-gray-800 shadow-lg overflow-y-auto ${scrollbarHideClass}`}>
             <div className="flex items-center mb-4">
               <h2 className="text-lg font-bold text-white flex-1">Files</h2>
@@ -630,11 +655,10 @@ export default function GeneratorPage() {
               <div className="flex space-x-2">
                 <button
                   onClick={() => setActiveTab('code')}
-                  className={`px-4 py-2 rounded-md font-medium text-sm transition-colors ${
-                    activeTab === 'code'
+                  className={`px-4 py-2 rounded-md font-medium text-sm transition-colors ${activeTab === 'code'
                       ? 'bg-indigo-600 text-white shadow-md'
                       : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
@@ -643,11 +667,10 @@ export default function GeneratorPage() {
                 </button>
                 <button
                   onClick={() => setActiveTab('preview')}
-                  className={`px-4 py-2 rounded-md font-medium text-sm transition-colors ${
-                    activeTab === 'preview'
+                  className={`px-4 py-2 rounded-md font-medium text-sm transition-colors ${activeTab === 'preview'
                       ? 'bg-indigo-600 text-white shadow-md'
                       : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-center gap-2">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
@@ -655,15 +678,14 @@ export default function GeneratorPage() {
                   </div>
                 </button>
               </div>
-              
+
               <button
                 onClick={handleDeploy}
                 disabled={deploying || !fileStructure}
-                className={`px-4 py-2 rounded-md ml-auto text-sm font-medium transition-colors ${
-                  deploying || !fileStructure
+                className={`px-4 py-2 rounded-md ml-auto text-sm font-medium transition-colors ${deploying || !fileStructure
                     ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                     : 'bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg'
-                }`}
+                  }`}
               >
                 {deploying ? (
                   <span className="flex items-center gap-2">
@@ -678,16 +700,16 @@ export default function GeneratorPage() {
                 )}
               </button>
             </div>
-            
+
             {deployUrl && (
               <div className="mx-3 my-2 p-3 bg-green-950 border border-green-700 text-green-300 rounded-md flex items-center justify-between shadow-inner">
                 <span className="flex items-center gap-2">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500 text-sm"><polyline points="20 6 9 17 4 12"></polyline></svg>
                   {deployMessage || 'Deployed successfully!'}
                 </span>
-                <a 
-                  href={deployUrl} 
-                  target="_blank" 
+                <a
+                  href={deployUrl}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-white bg-green-700 hover:bg-green-800 px-3 py-2 rounded-md text-sm transition-colors w-24 text-center"
                 >
@@ -695,7 +717,7 @@ export default function GeneratorPage() {
                 </a>
               </div>
             )}
-            
+
             {deployError && (
               <div className="mx-3 my-2 p-3 bg-red-950 border border-red-700 text-red-300 rounded-md flex items-center justify-between shadow-inner">
                 <span className="flex items-center gap-2">
@@ -704,7 +726,7 @@ export default function GeneratorPage() {
                 </span>
               </div>
             )}
-            
+
             <div className="h-[calc(100%-5rem)]">
               {activeTab === 'code' ? (
                 selectedFile ? (
@@ -725,10 +747,10 @@ export default function GeneratorPage() {
                     <p className="text-center">Select a file from the explorer to view or edit its content.</p>
                   </div>
                 )
-              ) : ( 
+              ) : (
                 <div className='w-full h-full flex items-center justify-center bg-white'>
-                  {url ? 
-                    <iframe className='w-full h-full border-0' src={url}/> : 
+                  {url ?
+                    <iframe className='w-full h-full border-0' src={url} /> :
                     <div className="flex flex-col items-center justify-center text-gray-500 h-full w-full bg-gray-950">
                       <Loader2 className="h-8 w-8 animate-spin mb-4" />
                       <p>Loading preview...</p>
@@ -774,7 +796,7 @@ export default function GeneratorPage() {
                 }
 
                 const { response: aiResponse } = await response.json();
-                
+
                 setLlmMessages(messages => [
                   ...messages,
                   { role: "user", content: userPrompt },
@@ -822,8 +844,8 @@ export default function GeneratorPage() {
                 {!templateSet ? 'Analyzing Your Prompt' : 'Generating Code'}
               </h3>
               <p className="text-gray-400 max-w-xs">
-                {!templateSet 
-                  ? 'Determining the best project structure based on your requirements...' 
+                {!templateSet
+                  ? 'Determining the best project structure based on your requirements...'
                   : 'Creating files and setting up your project. This may take a moment...'}
               </p>
             </div>
