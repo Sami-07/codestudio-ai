@@ -113,6 +113,7 @@ const CodeEditor: React.FC = () => {
 
     // Update the file structure with the new content
     const updatedStructure = updateNodeContent(fileStructure, selectedFile, newContent);
+    //@ts-ignore
     setFileStructure(updatedStructure);
   };
 

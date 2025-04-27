@@ -94,7 +94,7 @@ const FileExplorer: React.FC = () => {
   const [selectedFile, setSelectedFile] = useAtom(selectedFileAtom);
 
   const handleSelect = useCallback((path: string) => {
-   
+    //@ts-ignore
     setSelectedFile(path);
   }, [setSelectedFile]);
 

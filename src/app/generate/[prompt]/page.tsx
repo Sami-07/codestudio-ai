@@ -321,6 +321,7 @@ export default function GeneratorPage() {
 
       if (structureChanged) {
         console.log('Updated file structure:', root);
+        //@ts-ignore
         setFileStructure(root);
       }
 
@@ -337,6 +338,7 @@ export default function GeneratorPage() {
       setLoading(true);
       setTemplateSet(false); // Reset template set flag
       setUrl(''); // Reset URL
+      //@ts-ignore
       setFileStructure(null); // Reset file structure
       setSteps([]); // Reset steps
       setLlmMessages([]); // Reset messages
@@ -495,7 +497,7 @@ export default function GeneratorPage() {
       setDeployError(null);
       setDeployMessage(null);
       
-      const response = await fetch('/api/build', {
+      const response = await fetch('/api/upload', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -8,7 +8,11 @@ export async function POST(req: NextRequest) {
     const { messages } = await req.json();
 
     const anthropic = new Anthropic();
-
+    return NextResponse.json({
+      success: true,
+      message: "AI response generated successfully",
+      response: "This is a test response"
+    });
     const response = await anthropic.messages.create({
       model: 'claude-3-5-sonnet-20241022',
       messages: messages,

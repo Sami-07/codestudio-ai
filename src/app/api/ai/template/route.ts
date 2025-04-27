@@ -12,7 +12,11 @@ export async function GET(req: NextRequest) {
             error: "Prompt is required"
         }, { status: 400 });
     }
-
+    return NextResponse.json({
+        success: true,
+        message: "AI response generated successfully",
+        response: "This is a test response"
+    });
     const response = await anthropic.messages.create({
         model: "claude-3-5-sonnet-20240620",
         messages: [

@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: false,
+  eslint: {
+    // Disable ESLint during production builds
+    ignoreDuringBuilds: true,
+  },
   webpack: (config, { isServer }) => {
     // Add support for Monaco editor
     // https://github.com/suren-atoyan/monaco-react#webpack

@@ -140,7 +140,7 @@ export function parsestudioXml(xmlString: string): FileSystemNode {
       console.warn('No <studioArtifact> found in XML. Trying to parse directly...');
       
       // Try to find any studioAction elements regardless of structure
-      let actions = [];
+      let actions: any[] = [];
       if (jsonObj.studioAction) {
         actions = ensureArray(jsonObj.studioAction);
       } else {
