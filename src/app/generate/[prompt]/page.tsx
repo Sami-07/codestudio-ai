@@ -497,7 +497,7 @@ export default function GeneratorPage() {
       setDeployError(null);
       setDeployMessage(null);
       
-      const response = await fetch('/api/upload', {
+      const response = await fetch('/api/temp-build', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -34,8 +34,8 @@ export default function Home() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    notify();
-    return;
+    // notify();
+    // return;
 
     if (prompt.trim()) {
       const encodedPrompt = encodeURIComponent(prompt.trim());
