@@ -658,7 +658,7 @@ export default function Home() {
               variants={fadeInUp}
             >
               <Link 
-                href="/get-started" 
+                href="/create" 
                 className="px-10 py-4 rounded-full bg-gradient-to-r from-blue-500 to-violet-600 font-medium text-lg hover:shadow-lg hover:shadow-blue-500/25 transition-all duration-300"
               >
                 Start Building Now
