@@ -687,7 +687,7 @@ export default function Home() {
             <motion.div 
               className="bg-slate-800 p-6 rounded-xl border border-slate-700 text-center"
               variants={fadeInUp}
-              onClick={() => window.open("https://github.com/Sami-07/codestudio-ai", "_blank")}
+              onClick={() => window.open("https://github.com/Sami-07", "_blank")}
             >
               <div className="w-24 h-24 bg-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-2xl font-bold text-blue-400">SA</span>
