@@ -491,26 +491,14 @@ export default function GeneratorPage() {
 
   const handleDeploy = async () => {
     if (!fileStructure) return;
-    const notify = () => toast.info('To save cost, the deployment is disabled. Please view the demo video on the home page to see the deplyment feature in action.', {
-      position: "top-center",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: false,
-      pauseOnHover: true,
-      draggable: true,
-      progress: undefined,
-      theme: "dark",
+   
 
-    });
-
-    notify();
-    return;
     try {
       setDeploying(true);
       setDeployError(null);
       setDeployMessage(null);
 
-      const response = await fetch('/api/upload', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BUILD_SERVER_URI}/api/deploy`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -531,7 +519,8 @@ export default function GeneratorPage() {
         return;
       }
 
-      setDeployUrl(data.deployedLink);
+      setDeployUrl(data.url);
+      // setDeployUrl(data.deployedLink);
       setDeployMessage(data.message || 'Deployment successful!');
     } catch (error) {
       console.error('Deployment error:', error);
